@@ -5,3 +5,4 @@ from pydantic import BaseModel
 class Job(BaseModel):
     job_id: str
     task_status: str
+    graph_path: str

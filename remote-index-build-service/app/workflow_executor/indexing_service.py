@@ -1,5 +1,5 @@
 from models.api import CreateIndexRequest
-from models.job import job
+from models.job import Job
 
 class IndexingService:
 
@@ -13,4 +13,4 @@ class IndexingService:
         pass
 
     def get_job(self, job_id: str):
-        return job.Job(job_id=job_id, status="NOT IMPLEMENTED!", graph_path="NOT IMPLEMENTED!")
+        pass

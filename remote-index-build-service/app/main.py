@@ -20,4 +20,4 @@ def create_index(request: CreateIndexRequest) -> CreateIndexResponse:
 @app.get("/_status/{job_id}")
 def get_status(job_id: str) -> GetStatusResponse:
     job = indexing_service.get_job(job_id)
-    return GetStatusResponse(task_status=job.status, graph_path=job.graph_path)
+    return GetStatusResponse(task_status="not implemented", graph_path="not_implemented")
