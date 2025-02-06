@@ -1,37 +1,23 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import Optional, Dict, Union
-
-class Encoder(BaseModel):
-    name: str
-    parameters: Optional[Dict[str, Union[str, int]]] = None
-
-class IndexParameters(BaseModel):
-    ef_search: Optional[int] = None
-    ef_construction: Optional[int] = None
-    m: Optional[int] = None
-    encoder: Optional[Encoder] = None
-
-class CreateIndexRequest(BaseModel):
-    repository_type: str
-    container_name: str
-    object_path: str
-    tenant_id: str
-    index_parameters: Optional[IndexParameters] = None
+from models.api import CreateIndexRequest, CreateIndexResponse, GetStatusResponse
+from workflow_executor.indexing_service import IndexingService
 
 
 app = FastAPI()
+indexing_service = IndexingService()
 
 @app.post("/_build")
-def create_index(request: CreateIndexRequest):
-    return {
-        "job_id": "Not implemented yet!"
-    }
+def create_index(request: CreateIndexRequest) -> CreateIndexResponse:
+    job_hashes = indexing_service.get_active_jobs
+    request_hash = hash(request)
+    if request_hash in job_hashes:
+        return CreateIndexResponse(job_id=job_hashes[request_hash])
+    else:
+      job_id = indexing_service.enqueue_job(request)
+      return CreateIndexResponse(job_id=job_id)
 
 
-@app.get("/_status/{build_id}")
-def get_status(build_id: str):
-    return {
-        "task_status": "Not implemented yet!",
-        "graph_path": "Not implemented yet!"
-    }
+@app.get("/_status/{job_id}")
+def get_status(job_id: str) -> GetStatusResponse:
+    job = indexing_service.get_job(job_id)
+    return GetStatusResponse(task_status=job.status, graph_path=job.graph_path)
