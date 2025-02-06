@@ -25,6 +25,7 @@ def build_index_and_upload_index(createIndexRequest: CreateIndexRequest, job_id:
     vectors = object_store_client.get_vectors(createIndexRequest.object_path)
     end_time = time.time()
 
+    # we can move this to inside the get_vectors function. This is just shown here as an example.
     metric_client.push_metric(
         {
             "vector_download_time": end_time - start_time,
@@ -36,6 +37,7 @@ def build_index_and_upload_index(createIndexRequest: CreateIndexRequest, job_id:
     index = index_builder_client.build_index(vectors)
     end_time = time.time()
 
+    # we can move this to inside the build_index function. This is just shown here as an example.
     metric_client.push_metric(
         {
             "total_index_build_time": end_time - start_time,
@@ -47,6 +49,7 @@ def build_index_and_upload_index(createIndexRequest: CreateIndexRequest, job_id:
     object_store_client.upload_index(index)
     end_time = time.time()
 
+    # we can move this to inside the upload_index function. This is just shown here as an example.
     metric_client.push_metric(
         {
             "vector_upload_time": end_time - start_time,
