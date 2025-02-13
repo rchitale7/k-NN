@@ -1,5 +1,6 @@
 #  Copyright OpenSearch Contributors
 #  SPDX-License-Identifier: Apache-2.0
+
 from pydantic import BaseModel
 from typing import Optional, Dict, Union
 
@@ -17,7 +18,7 @@ class VectorParameters(BaseModel):
     dimension: int
     docs: int
 
-class CreateIndexRequest(BaseModel):
+class CreateJobRequest(BaseModel):
     repository_type: str
     container_name: str
     object_path: str
@@ -25,9 +26,12 @@ class CreateIndexRequest(BaseModel):
     vector_parameters: VectorParameters
     index_parameters: Optional[IndexParameters] = None
 
-class CreateIndexResponse(BaseModel):
+class CreateJobResponse(BaseModel):
     job_id: str
 
 class GetStatusResponse(BaseModel):
     task_status: str
-    graph_path: str
+    knn_index_path: str
+
+class CancelJobResponse(BaseModel):
+    status: str

@@ -1,23 +1,63 @@
+from api.routes import build, status, cancel
 from fastapi import FastAPI
-from models.api import CreateIndexRequest, CreateIndexResponse, GetStatusResponse
-from workflow_executor.indexing_service import IndexingService
+from core.config import Settings
+from core.resources import ResourceManager
+from executors.workflow_executor import WorkflowExecutor
+from models.workflow import BuildWorkflow
+from queue.memory import InMemoryPendingQueue
+from queue.processor import QueueProcessor
+from services.index_builder import IndexBuilder
+from services.job_service import JobService
+from storage.factory import RequestStoreFactory
 
+settings = Settings()
 
-app = FastAPI()
-indexing_service = IndexingService()
+request_store = RequestStoreFactory.create(
+    store_type=settings.request_store_type,
+    settings=settings
+)
 
-@app.post("/_build")
-def create_index(request: CreateIndexRequest) -> CreateIndexResponse:
-    job_hashes = indexing_service.get_active_jobs
-    request_hash = hash(request)
-    if request_hash in job_hashes:
-        return CreateIndexResponse(job_id=job_hashes[request_hash])
-    else:
-      job_id = indexing_service.enqueue_job(request)
-      return CreateIndexResponse(job_id=job_id)
+pending_queue = InMemoryPendingQueue[BuildWorkflow](
+    max_size=settings.pending_queue_max_size
+)
 
+resource_manager = ResourceManager(
+    total_gpu_memory=settings.gpu_memory_limit,
+    total_cpu_memory=settings.cpu_memory_limit
+)
 
-@app.get("/_status/{job_id}")
-def get_status(job_id: str) -> GetStatusResponse:
-    job = indexing_service.get_job(job_id)
-    return GetStatusResponse(task_status="not implemented", graph_path="not_implemented")
+index_builder = IndexBuilder(settings)
+
+workflow_executor = WorkflowExecutor(
+    max_workers=settings.max_workers,
+    request_store=request_store,
+    resource_manager=resource_manager,
+    build_index_fn=index_builder.build_index
+)
+
+queue_processor = QueueProcessor(
+    pending_queue=pending_queue,
+    request_store=request_store,
+    resource_manager=resource_manager,
+    build_index_fn=index_builder.build_index
+)
+
+job_service = JobService(
+    request_store=request_store,
+    pending_queue=pending_queue
+)
+
+queue_processor.start()
+
+app = FastAPI(
+    title=settings.service_name
+)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    queue_processor.stop()
+    workflow_executor.shutdown()
+
+app.include_router(build.router)
+app.include_router(status.router)
+app.include_router(cancel.router)
