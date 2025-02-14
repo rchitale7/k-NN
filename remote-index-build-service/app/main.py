@@ -3,12 +3,15 @@ from fastapi import FastAPI
 from core.config import Settings
 from core.resources import ResourceManager
 from executors.workflow_executor import WorkflowExecutor
+
 from models.workflow import BuildWorkflow
 from queue.memory import InMemoryPendingQueue
 from queue.processor import QueueProcessor
 from services.index_builder import IndexBuilder
 from services.job_service import JobService
 from storage.factory import RequestStoreFactory
+
+logger = logging.getLogger(__name__)
 
 settings = Settings()
 
@@ -39,24 +42,31 @@ queue_processor = QueueProcessor(
     pending_queue=pending_queue,
     request_store=request_store,
     resource_manager=resource_manager,
-    build_index_fn=index_builder.build_index
+    workflow_executor=workflow_executor,
+    max_retries=settings.pending_queue_max_retries,
+    retry_delay=settings.pending_queue_retry_delay
 )
 
 job_service = JobService(
     request_store=request_store,
-    pending_queue=pending_queue
+    pending_queue=pending_queue,
+    total_gpu_memory=settings.gpu_memory_limit,
+    total_cpu_memory=settings.cpu_memory_limit
 )
 
-queue_processor.start()
+# queue_processor.start()
 
 app = FastAPI(
     title=settings.service_name
 )
 
+app.state.job_service = job_service
+
 @app.on_event("shutdown")
 async def shutdown_event():
-    queue_processor.stop()
-    workflow_executor.shutdown()
+    logger.info("Shutting down application ...")
+    # queue_processor.stop()
+    # workflow_executor.shutdown()
 
 app.include_router(build.router)
 app.include_router(status.router)

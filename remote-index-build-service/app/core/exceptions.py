@@ -15,3 +15,7 @@ class ObjectStoreError(BuildServiceError):
 class ResourceError(BuildServiceError):
     """Raised when there's an error managing resources"""
     pass
+
+class QueueException(BuildServiceError):
+    """Raised when there's an exception processing request from queue"""
+    pass

@@ -6,16 +6,23 @@ def calculate_memory_requirements(
         num_vectors: int
 ) -> tuple[float, float]:
     """
-    Calculate GPU and CPU memory requirements for a vector workload.
-    Returns (gpu_memory_gb, cpu_memory_gb)
+        Calculate GPU and CPU memory requirements for a vector workload.
+
+        This function estimates the memory needed for processing vector operations,
+        taking into account the workload size and complexity.
+
+        Returns:
+        tuple[float, float]: A tuple containing:
+            - gpu_memory_gb (float): Required GPU memory in gigabytes
+            - cpu_memory_gb (float): Required CPU memory in gigabytes
     """
     # Vector memory (same for both GPU and CPU)
     vector_memory = vector_dimensions * num_vectors * 4  # 4 bytes per float32
 
-    # GPU memory (includes extra space for index construction)
-    gpu_memory = (vector_memory * 1.5) / (1024 ** 3)  # Convert to GB
+    m = 16
 
-    # CPU memory (includes space for both vectors and final index)
-    cpu_memory = (vector_memory * 2) / (1024 ** 3)  # Convert to GB
+    gpu_memory = ((vector_dimensions*4 + m*16) * 1.1 * num_vectors / (2 ** 30)) * 1.5
 
-    return gpu_memory, cpu_memory
+    cpu_memory = (vector_dimensions*4 + m*16) * 1.1 * num_vectors / (2 ** 30)
+
+    return (gpu_memory + vector_memory), (cpu_memory + vector_memory)

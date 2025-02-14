@@ -5,6 +5,7 @@ from typing import Dict, Optional, Any
 from datetime import datetime, timedelta
 import threading
 import time
+import heapq
 
 from models.job import Job
 from storage.base import RequestStore
@@ -26,14 +27,14 @@ class InMemoryRequestStore(RequestStore):
             if len(self._store) >= self._max_size:
                 return False
 
-            self._store[job_id] = (job, datetime.utcnow())
+            self._store[job_id] = (job, datetime.now(datetime.UTC))
             return True
 
     def get(self, job_id: str) -> Optional[Job]:
         with self._lock:
             if job_id in self._store:
                 job, timestamp = self._store[job_id]
-                if datetime.utcnow() - timestamp < timedelta(seconds=self._ttl_seconds):
+                if datetime.now(datetime.UTC) - timestamp < timedelta(seconds=self._ttl_seconds):
                     return job
                 else:
                     del self._store[job_id]
@@ -59,15 +60,16 @@ class InMemoryRequestStore(RequestStore):
 
     def cleanup_expired(self) -> None:
         with self._lock:
-            current_time = datetime.utcnow()
-            expired_keys = [
-                job_id for job_id, (_, timestamp) in self._store.items()
-                if current_time - timestamp >= timedelta(seconds=self._ttl_seconds)
-            ]
-            for job_id in expired_keys:
-                del self._store[job_id]
+            current_time = datetime.now(datetime.UTC)
+            expiration_threshold = current_time - timedelta(seconds=self._ttl_seconds)
+
+            self._store = {
+                job_id: data
+                for job_id, data in self._store.items()
+                if data[1] > expiration_threshold
+            }
 
     def _cleanup_loop(self) -> None:
         while True:
-            time.sleep(60)  # Run cleanup every minute
+            time.sleep(5)  # Run cleanup every 5 seconds
             self.cleanup_expired()

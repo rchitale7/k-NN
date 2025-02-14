@@ -31,7 +31,6 @@ class WorkflowExecutor:
         Returns True if submission was successful, False otherwise.
         """
         if not self._request_store.get(workflow.job.id):
-            logger.info(f"Job {workflow.job.id} was cancelled before execution")
             return False
 
             # Submit the workflow to thread pool
@@ -69,7 +68,7 @@ class WorkflowExecutor:
             else:
                 logger.info(f"Job {workflow.job.id} was cancelled during execution")
 
-        except (BuildError, ObjectStoreError, MemoryError, RuntimeError) as e:
+        except (BuildError, ObjectStoreError, ResourceError, MemoryError, RuntimeError) as e:
             logger.error(
                 f"Build process failed for job {workflow.job.id}: {str(e)}"
             )
@@ -88,8 +87,8 @@ class WorkflowExecutor:
             )
 
 
-    def shutdown(self, wait: bool = True) -> None:
+    def shutdown(self) -> None:
         """
-        Shutdown the executor and optionally wait for completion.
+        Shutdown the executor
         """
-        self._executor.shutdown(wait=wait)
+        self._executor.shutdown(wait=True)

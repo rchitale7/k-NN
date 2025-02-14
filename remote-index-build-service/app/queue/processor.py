@@ -8,9 +8,9 @@ from typing import Callable, Optional
 from queue.base import PendingQueue
 from models.workflow import BuildWorkflow
 from core.resources import ResourceManager
+from core.exceptions import QueueException
 from storage.base import RequestStore
 from executors.workflow_executor import WorkflowExecutor
-from models.job import JobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +21,16 @@ class QueueProcessor:
         request_store: RequestStore,
         resource_manager: ResourceManager,
         workflow_executor: WorkflowExecutor,
+        max_retries: int,
+        retry_delay: int,
         check_interval: int = 5
     ):
         self.pending_queue = pending_queue
         self.request_store = request_store
         self.resource_manager = resource_manager
         self.workflow_executor = workflow_executor
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
         self.check_interval = check_interval
         self._stop_event = threading.Event()
         self._processor_thread: Optional[threading.Thread] = None
@@ -39,6 +43,10 @@ class QueueProcessor:
         self._stop_event.clear()
         self._processor_thread = threading.Thread(
             target=self._process_queue,
+            kwargs={
+                "max_retries": self.max_retries,
+                "retry_delay": self.retry_delay
+            },
             daemon=True
         )
         self._processor_thread.start()
@@ -50,13 +58,32 @@ class QueueProcessor:
             self._processor_thread.join()
             self._processor_thread = None
 
-    def _process_queue(self):
+    def _process_queue(self, max_retries: int, retry_delay: int):
         """Main processing loop"""
         while not self._stop_event.is_set():
-            try:
-                self._process_next_workflow()
-            except Exception as e:
-                logger.error(f"Error processing workflow: {e}", exc_info=True)
+            retry_count = 0
+            while retry_count < max_retries:
+                try:
+                    workflow = self.pending_queue.get()
+                    if workflow:
+                        self._process_workflow(workflow)
+                        break  # Success - exit retry loop
+
+                except QueueException as e:
+                    retry_count += 1
+                    if retry_count == max_retries:
+                        logger.error(f"Failed to read workflow after {max_retries} attempts: {e}")
+                        break
+
+                    # Exponential backoff: 1s, 2s, 4s, etc.
+                    delay = retry_delay * (2 ** (retry_count - 1))
+                    logger.warning(
+                        f"Failed to read workflow (attempt {retry_count}/{max_retries}). "
+                        f"Retrying in {delay} seconds"
+                    )
+
+                    time.sleep(delay)
+
 
             # Sleep before next check
             self._stop_event.wait(self.check_interval)
@@ -78,7 +105,9 @@ class QueueProcessor:
                 workflow.gpu_memory_required,
                 workflow.cpu_memory_required
         ):
-            return
+            raise QueueException(
+                f"Insufficient resources to process workflow {workflow.job_id}"
+            )
 
         # Allocate resources
         self.resource_manager.allocate(
@@ -95,3 +124,6 @@ class QueueProcessor:
                 workflow.gpu_memory_required,
                 workflow.cpu_memory_required
             )
+            raise QueueException((
+                f"Failed to submit workflow {workflow.job_id} to executor"
+            ))

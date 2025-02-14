@@ -35,6 +35,7 @@ class InMemoryPendingQueue(PendingQueue[T]):
         with self._lock:
             return len(self._queue)
 
+    # TODO: make this more efficient
     def is_full(self) -> bool:
         with self._lock:
             return len(self._queue) >= self._max_size

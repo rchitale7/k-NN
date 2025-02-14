@@ -1,11 +1,10 @@
 #  Copyright OpenSearch Contributors
 #  SPDX-License-Identifier: Apache-2.0
 from pydantic import BaseModel
-from models.job import Job
+from schemas.api import CreateJobRequest
 
 class BuildWorkflow(BaseModel):
-    job: Job
-    vector_dimensions: int
-    num_vectors: int
+    job_id: str
     gpu_memory_required: float
     cpu_memory_required: float
+    create_job_request: CreateJobRequest
