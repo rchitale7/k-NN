@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 from pydantic_settings import BaseSettings
-from storage.factory import RequestStoreType
+from storage.types import RequestStoreType
 
 class Settings(BaseSettings):
 
@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     # Pending Queue settings
     pending_queue_max_size: int
+    pending_queue_max_retries: int
+    pending_queue_retry_delay_seconds: int
 
     # Resource Manager settings
     gpu_memory_limit: float

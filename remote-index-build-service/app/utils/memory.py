@@ -21,6 +21,7 @@ def calculate_memory_requirements(
 
     m = 16
 
+    # use formula to calculate memory in GB
     gpu_memory = ((vector_dimensions*4 + m*16) * 1.1 * num_vectors / (2 ** 30)) * 1.5
 
     cpu_memory = (vector_dimensions*4 + m*16) * 1.1 * num_vectors / (2 ** 30)

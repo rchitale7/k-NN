@@ -5,7 +5,7 @@ from utils.hash import generate_job_id
 from utils.memory import calculate_memory_requirements
 from storage.base import RequestStore
 from schemas.api import CreateJobRequest
-from queue.base import PendingQueue
+from workflow_queue.base import PendingQueue
 
 class JobService:
     def __init__(

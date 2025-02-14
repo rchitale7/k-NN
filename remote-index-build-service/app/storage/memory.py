@@ -2,10 +2,9 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import threading
 import time
-import heapq
 
 from models.job import Job
 from storage.base import RequestStore
@@ -34,7 +33,7 @@ class InMemoryRequestStore(RequestStore):
         with self._lock:
             if job_id in self._store:
                 job, timestamp = self._store[job_id]
-                if datetime.now(datetime.UTC) - timestamp < timedelta(seconds=self._ttl_seconds):
+                if datetime.now(timezone.utc) - timestamp < timedelta(seconds=self._ttl_seconds):
                     return job
                 else:
                     del self._store[job_id]
@@ -60,7 +59,7 @@ class InMemoryRequestStore(RequestStore):
 
     def cleanup_expired(self) -> None:
         with self._lock:
-            current_time = datetime.now(datetime.UTC)
+            current_time = datetime.now(timezone.utc)
             expiration_threshold = current_time - timedelta(seconds=self._ttl_seconds)
 
             self._store = {

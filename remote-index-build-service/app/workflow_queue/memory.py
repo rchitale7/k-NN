@@ -1,10 +1,10 @@
 #  Copyright OpenSearch Contributors
 #  SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Generic, TypeVar
+from typing import Optional, TypeVar
 from collections import deque
 import threading
-from queue.base import PendingQueue
+from workflow_queue.base import PendingQueue
 
 T = TypeVar('T')
 

@@ -4,8 +4,8 @@
 import threading
 import time
 import logging
-from typing import Callable, Optional
-from queue.base import PendingQueue
+from typing import Optional
+from workflow_queue.base import PendingQueue
 from models.workflow import BuildWorkflow
 from core.resources import ResourceManager
 from core.exceptions import QueueException

@@ -5,11 +5,13 @@ from core.resources import ResourceManager
 from executors.workflow_executor import WorkflowExecutor
 
 from models.workflow import BuildWorkflow
-from queue.memory import InMemoryPendingQueue
-from queue.processor import QueueProcessor
+from workflow_queue.memory import InMemoryPendingQueue
+from workflow_queue.processor import QueueProcessor
 from services.index_builder import IndexBuilder
 from services.job_service import JobService
 from storage.factory import RequestStoreFactory
+
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ queue_processor = QueueProcessor(
     resource_manager=resource_manager,
     workflow_executor=workflow_executor,
     max_retries=settings.pending_queue_max_retries,
-    retry_delay=settings.pending_queue_retry_delay
+    retry_delay=settings.pending_queue_retry_delay_seconds
 )
 
 job_service = JobService(
