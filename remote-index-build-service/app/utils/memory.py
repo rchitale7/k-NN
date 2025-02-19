@@ -1,5 +1,9 @@
-#  Copyright OpenSearch Contributors
-#  SPDX-License-Identifier: Apache-2.0
+# Copyright OpenSearch Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# The OpenSearch Contributors require contributions made to
+# this file be licensed under the Apache-2.0 license or a
+# compatible open source license.
 from schemas.api import DataType
 
 def calculate_memory_requirements(
@@ -22,11 +26,12 @@ def calculate_memory_requirements(
 
     if data_type == DataType.FLOAT32:
         entry_size = 4
-    if data_type == DataType.FLOAT16:
+    elif data_type == DataType.FLOAT16:
         entry_size = 2
-    if data_type == DataType.BYTE:
+    elif data_type == DataType.BYTE:
         entry_size = 1
-
+    elif data_type == DataType.BINARY:
+        entry_size=0.125
     # Vector memory (same for both GPU and CPU)
     vector_memory = (vector_dimensions * num_vectors * entry_size) / (2 ** 30)  # 4 bytes per float32
 

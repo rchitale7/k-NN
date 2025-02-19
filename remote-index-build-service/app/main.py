@@ -1,4 +1,11 @@
-from api.routes import build, status, cancel
+# Copyright OpenSearch Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# The OpenSearch Contributors require contributions made to
+# this file be licensed under the Apache-2.0 license or a
+# compatible open source license.
+
+from api.routes import build, status
 from fastapi import FastAPI
 from core.config import Settings
 from core.resources import ResourceManager
@@ -8,6 +15,7 @@ from services.index_builder import IndexBuilder
 from services.job_service import JobService
 from storage.factory import RequestStoreFactory
 from utils.logging_config import configure_logging
+from contextlib import asynccontextmanager
 
 import logging
 
@@ -50,11 +58,11 @@ app = FastAPI(
 
 app.state.job_service = job_service
 
-@app.on_event("shutdown")
-async def shutdown_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
     logger.info("Shutting down application ...")
     workflow_executor.shutdown()
 
 app.include_router(build.router)
 app.include_router(status.router)
-app.include_router(cancel.router)
